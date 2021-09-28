@@ -40,7 +40,6 @@ def get_companyInfo(doc):
     comIntroduce = doc('.summary.mt8 .detail-content')
     rElem = comIntroduce.find('.label').text()
     comIntroduce.find('span').remove()
-    #print(rElem, comIntroduce.text())
     return comIntroduce.text()
 
 # ['股东信息', 数量]
@@ -63,11 +62,11 @@ def get_holderHeader(doc):
         currentHeader = ''
         h = holderHeader[i]
         if i == 1:
-            currentHeader = pq(h).remove('span').text() # print(currentHeader.text())
+            currentHeader = pq(h).remove('span').text()
         elif i == 4:
-            currentHeader = pq(h)('.child-span').remove('div').text() # print(currentHeader.text())
+            currentHeader = pq(h)('.child-span').remove('div').text()
         else:
-            currentHeader = h.text # print(h.text)
+            currentHeader = h.text
         header.append(currentHeader)
     
     return header
@@ -83,14 +82,14 @@ def get_holderInfos(doc):
             td = pq(tds[i])
             if i == 0:
                 serialNum = td.text()
-                dataList.append(serialNum) #print(serialNum)
+                dataList.append(serialNum)
             elif i == 1:
                 holderName = td('.table-toco .link-click.name-max').text()
-                dataList.append(holderName) #print(holderName)
+                dataList.append(holderName)
             elif i == 3:
-                dataList.append(td.find('span').text().split(' ')[0]) #print(td.find('span').text().split(' ')[0])
+                dataList.append(td.find('span').text().split(' ')[0])
             else:
-                dataList.append(td.find('span').text()) # print(td.find('span').text())
+                dataList.append(td.find('span').text())
         infosList.append(dataList)
     
     return infosList
