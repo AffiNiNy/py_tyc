@@ -1,3 +1,4 @@
+import time
 from selenium import webdriver
 
 def get_chromeBrowser():
@@ -25,3 +26,20 @@ def get_chromeBrowser():
     browser.set_window_size(1280,800)
 
     return browser
+
+# 切换到最新打开选项卡
+def switchToNewTab(chromeBrowser):
+    # 切换到当前最新打开的窗口
+    if chromeBrowser.current_window_handle != chromeBrowser.window_handles[len(chromeBrowser.window_handles)-1]:
+        chromeBrowser.switch_to.window(chromeBrowser.window_handles[-1])
+
+def closeOtherTabs(chromeBrowser, firstHandle):
+    # Loop through until find the first handle
+    for window_handle in chromeBrowser.window_handles:
+        if window_handle != firstHandle:
+            chromeBrowser.switch_to.window(window_handle)
+            chromeBrowser.close()
+            time.sleep(1)
+    
+    chromeBrowser.switch_to.window(firstHandle)
+    time.sleep(1)

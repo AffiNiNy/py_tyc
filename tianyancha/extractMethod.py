@@ -1,9 +1,15 @@
 import os
 import sys
 import time
+
+from selenium.webdriver.chrome.webdriver import WebDriver
 sys.path.append(os.path.split(sys.path[0])[0])
 from tianyancha.partID import getIDObj
 from pyquery import PyQuery as pq
+from seleniumDrivers import chrome
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 ids = getIDObj.get_idObjs()
 curYear = time.localtime(time.time()).tm_year
@@ -42,7 +48,7 @@ def get_companyInfo(doc):
     comIntroduce.find('span').remove()
     return comIntroduce.text()
 
-# ['股东信息', 数量]
+# 股东数量
 def get_holderTitile(doc):
     """
     ['股东信息', 数量]
@@ -210,30 +216,48 @@ def get_certificateInfos(doc):
 def get_bidHeader(doc):
     return get_shortHeader(doc, ids.bidsID)
 
+chromeBrowser = chrome.get_chromeBrowser()
 # 招投标列表
 def get_bidInfos(doc):
     infosList = []
-    trs = doc(ids.bidsID + ' > .table > tbody').children()
-    for tr in trs:
+    wait = WebDriverWait(chromeBrowser, 12)
+    containerID = ids.bidsID
+    trs = doc(containerID + ' > .table > tbody').children()
+    for trIdx in range(len(trs)):
         dataList = []
-        tds = pq(tr).children()
-        if curYear - int(tds[1].text.split('-')[0]) > 5:
+        tds = pq(trs[trIdx]).children()
+        if curYear - int(tds[1].text.split('-')[0]) > 5: # 获取 5 年内招投标
             break
         for i in range(len(tds) - 1):
             tdText = pq(tds[i]).text()
             dataList.append(tdText)
-            if i == 4:
-                bidType = tdText
+            if i == 4 and tdText == '招标': # 招标类型
+                bidPassFlag = True
             elif i == 5:
-                buyer = tdText
+                buyer = tdText # 采购人
             elif i == 6:
-                supplier = tdText
+                supplier = tdText # 供应商
             elif i == 7:
-                bidMoney = tdText
-            
+                bidMoney = tdText # 中标金额
+        
+        detailBtn = wait.until(EC.element_to_be_clickable((
+            By.CSS_SELECTOR,
+            containerID + ' .table > tbody > tr:nth-child('+(trIdx + 1)+') > td:nth-child(8)'
+        )))
+        detailBtn.click()
+        time.sleep(1)
+        # 打开招投标详情页面获取其它供应商及前面table的缺失信息
+        chrome.switchToNewTab(chromeBrowser)
+        doc = pq(chromeBrowser.page_source)
+        supplierList = get_suppliersInfos(doc)
+        dataList[6] = supplierList
         infosList.append(dataList)
 
     return infosList
+
+def get_suppliersInfos(doc):
+    return []
+
 
 # 软件著作权表头
 # 软件著作权列表
@@ -241,7 +265,8 @@ def get_bidInfos(doc):
 
 
 if __name__ == '__main__':
-    filePath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
+    filePath = 'D:\VSCode_Projects\py_tyc\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
+    # filePath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
     # filePath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg\website_info\html\\tyc\天眼查-商业查询平台_企业信息查询_公司查询_工商查询_企业信用信息系统.html'
     with open(filePath, "r", encoding='utf8') as f:
         str = f.read()
