@@ -1,0 +1,10 @@
+{
+    "holderID": "#_container_holderCount",
+    "staffID": "#_container_staffCount",
+    "recruitID": "#_container_baipin",
+    "mainTeamID": "#_container_teamMember",
+    "firmProductID": "#_container_firmProduct",
+    "certificateID": "#_container_certificate",
+    "bidsID": "#_container_bid",
+    "copyrightID": "#_container_copyright"
+}
