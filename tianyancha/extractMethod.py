@@ -26,6 +26,9 @@ curYear = time.localtime(time.time()).tm_year
 # 招投标 bidsID 5年 详情页面主要类名: lawsuitcontent bidcontent link-warp
 # 软件著作权 copyrightID 3 年
 
+def get_selfName(doc):
+    return doc('#company_web_top .box.-company-box > .content .header .name').text()
+
 def get_commonHeader(doc, containerID):
     header = []
     holderHeader = doc(containerID + ' .table thead tr > th')
@@ -255,7 +258,16 @@ def get_bidInfos(doc):
 
     return infosList
 
-def get_suppliersInfos(doc):
+def get_suppliersInfos(doc, selfName):
+    comsID = ids.relatedComID
+    coms = doc(comsID + ' > a').items()
+    comsCnt = len(list(coms)) # 获取 generator 长度
+    
+    for item in coms:
+        curComName = pq(item).text()
+    # 1 是否超过 3 家供应商
+    # 2 超过 3 家则找 .js-full-container.hidden
+    # 3 没有则找 .js-full-container 
     return []
 
 
@@ -265,15 +277,31 @@ def get_suppliersInfos(doc):
 
 
 if __name__ == '__main__':
-    filePath = 'D:\VSCode_Projects\py_tyc\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
-    # filePath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
-    # filePath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg\website_info\html\\tyc\天眼查-商业查询平台_企业信息查询_公司查询_工商查询_企业信用信息系统.html'
+    lenovoPath = 'D:\VSCode_Projects\py_tyc'
+    xpsPath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg'
+    if 1 == 1:
+        fileHeader = lenovoPath
+    else:
+        fileHeader = xpsPath
+    
+    filePath = fileHeader + '\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
+
     with open(filePath, "r", encoding='utf8') as f:
         str = f.read()
+        selfName = get_selfName(pq(str))
+        print('selfName', selfName)
     
+    filePath = fileHeader + '\website_info\html\\bids\东莞市智慧招商综合地理信息系统升级改造项目中标（成交）结果公告_招投标信息查询 - 天眼查.html'
+    with open(filePath, "r", encoding='utf8') as f:
+        str = f.read()
     doc = pq(str)
-    print(get_bidHeader(doc))
+    # 测试招投标详情页面
+    get_suppliersInfos(doc)
+
+    # print(get_bidHeader(doc))
     # print('infos: ', get_bidInfos(doc))
-    l = get_bidInfos(doc)
-    for e in l:
-        print(e)
+    # l = get_bidInfos(doc)
+    # for e in l:
+    #     print(e)
+
+    

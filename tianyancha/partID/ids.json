@@ -6,5 +6,6 @@
     "firmProductID": "#_container_firmProduct",
     "certificateID": "#_container_certificate",
     "bidsID": "#_container_bid",
-    "copyrightID": "#_container_copyright"
+    "copyrightID": "#_container_copyright",
+    "relatedComID": ".js-full-container"
 }
