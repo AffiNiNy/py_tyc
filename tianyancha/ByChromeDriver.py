@@ -120,25 +120,44 @@ def click_listNextPage(containerID):
     # 等待最后一行的 "详情" 链接可用
     wait.until(EC.element_to_be_clickable((
         By.CSS_SELECTOR, 
-        containerID + ' > .table > tbody > tr:last-child > td:nth-child(8) > a'
+        containerID + ' > .table > tbody > tr:last-child > td:nth-child(9) > a'
     )))
 
 # 企业简介、工商信息、股东信息、主要人员(高管信息)、核心团队、企业业务、招聘信息、资质证书、招投标、软件著作权 保存到excel
 def mainProcess(doc):
     print(r'**** 进入主要处理 ****')
 
-    maxPage = get_pageCount(doc, ids.recruitID) 
-    print('maxPage: ', maxPage)
-    recruitHeader = methods.get_recruitHeader(doc)
-    print('header: ', recruitHeader)
-    dataList = methods.get_recruitInfos(doc)
-    if maxPage > 1:
-        for i in range(1, 3): # range(1, maxPage)
-            click_listNextPage(ids.recruitID)
-            time.sleep(random.uniform(1.5, 2.3)) # 列表翻页后等待
-            dataList.append(methods.get_recruitInfos(doc))
+    # 招聘信息
+    # maxPage = get_pageCount(doc, ids.recruitID) 
+    # print('maxPage: ', maxPage)
+    # recruitHeader = methods.get_recruitHeader(doc)
+    # print('header: ', recruitHeader)
+    # dataList = methods.get_recruitInfos(doc)
+    # if maxPage > 1:
+    #     for i in range(1, 3): # range(1, maxPage)
+    #         click_listNextPage(ids.recruitID)
+    #         time.sleep(random.uniform(1.5, 2.3)) # 列表翻页后等待
+    #         nextPageList = methods.get_recruitInfos(doc)
+    #         if len(nextPageList) > 0:
+    #             dataList.append(nextPageList)
+
+    bidsMaxPage = get_pageCount(doc, ids.bidsID)
+    print('bidsMaxPage: ', bidsMaxPage)
+    header = methods.get_bidHeader(doc)
+    print('bidHeader: ', header)
     
-    print(dataList)
+    dataList = methods.get_bidInfos(doc, chromeBrowser)
+    print('first page: ', dataList)
+
+    click_listNextPage(ids.bidsID)
+    time.sleep(random.uniform(1.5, 2.3)) # 列表翻页后等待
+    newPageSrc = chromeBrowser.page_source
+    doc = pq(newPageSrc)
+    nextPageList = methods.get_bidInfos(doc, chromeBrowser)
+    if len(nextPageList) > 0:
+        dataList.append(nextPageList)
+
+    print('two pages: ', dataList)
 
 
 

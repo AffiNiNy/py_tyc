@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 
@@ -8,23 +9,17 @@ from tianyancha.partID import getIDObj
 from pyquery import PyQuery as pq
 from seleniumDrivers import chrome
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 ids = getIDObj.get_idObjs()
 curYear = time.localtime(time.time()).tm_year
+# 招标金额的正则式
+pattern = '(\d{1,3},)+\d{2,3}\.\d{2,3}'
+
 
 # 企业简介、工商信息、股东信息、主要人员、核心团队、企业业务、招聘信息、资质证书、招投标、软件著作权
-# 企业简介 .summary.mt8 .detail-content
-# 工商信息 #_container_baseInfo
-# 股东信息 holderID
-# 主要人员 staffID
-# 核心团队 mainTeamID
-# 企业业务 firmProductID
-# 招聘信息 recruitID   2年 改成 3 年
-# 资质证书 certificateID
-# 招投标 bidsID 5年 详情页面主要类名: lawsuitcontent bidcontent link-warp
-# 软件著作权 copyrightID 3 年
 
 def get_selfName(doc):
     return doc('#company_web_top .box.-company-box > .content .header .name').text()
@@ -219,11 +214,11 @@ def get_certificateInfos(doc):
 def get_bidHeader(doc):
     return get_shortHeader(doc, ids.bidsID)
 
-chromeBrowser = chrome.get_chromeBrowser()
+# chromeBrowser = chrome.get_chromeBrowser()
 # 招投标列表
-def get_bidInfos(doc):
+def get_bidInfos(doc, chromeBrowser):
     infosList = []
-    wait = WebDriverWait(chromeBrowser, 12)
+    comSelfName = get_selfName(doc)
     containerID = ids.bidsID
     trs = doc(containerID + ' > .table > tbody').children()
     for trIdx in range(len(trs)):
@@ -231,45 +226,84 @@ def get_bidInfos(doc):
         tds = pq(trs[trIdx]).children()
         if curYear - int(tds[1].text.split('-')[0]) > 5: # 获取 5 年内招投标
             break
+        
+        nextTrFlag = False
+        recordFullDocFlag = False
+        findBidMoneyFlag = False
         for i in range(len(tds) - 1):
             tdText = pq(tds[i]).text()
             dataList.append(tdText)
             if i == 4 and tdText == '招标': # 招标类型
-                bidPassFlag = True
-            elif i == 5:
-                buyer = tdText # 采购人
-            elif i == 6:
-                supplier = tdText # 供应商
-            elif i == 7:
-                bidMoney = tdText # 中标金额
-        
+                nextTrFlag = True
+                break
+            elif i == 5: # 采购人
+                buyer = tdText
+                if buyer == '-':
+                    nextTrFlag = True
+                    break
+            elif i == 6: # 供应商
+                supplier = tdText
+                if supplier == '-':
+                    recordFullDocFlag = True
+            elif i == 7: # 中标金额
+                bidMoney = tdText
+                if bidMoney == '-':
+                    findBidMoneyFlag = True
+        if nextTrFlag:
+            continue
+
+        wait = WebDriverWait(chromeBrowser, 12)
         detailBtn = wait.until(EC.element_to_be_clickable((
             By.CSS_SELECTOR,
-            containerID + ' .table > tbody > tr:nth-child('+(trIdx + 1)+') > td:nth-child(8)'
+            containerID + ' .table > tbody > tr:nth-child('+str(trIdx + 1)+') > td:nth-child(9)'
         )))
         detailBtn.click()
         time.sleep(1)
-        # 打开招投标详情页面获取其它供应商及前面table的缺失信息
-        chrome.switchToNewTab(chromeBrowser)
+
+        # 打开招投标详情页面获取其它供应
+        wait = WebDriverWait(chromeBrowser, 12)
+        detailPage = wait.until(EC.visibility_of_element_located((
+            By.CSS_SELECTOR, '#tyc_banner_left'
+        )))
         doc = pq(chromeBrowser.page_source)
-        supplierList = get_suppliersInfos(doc)
-        dataList[6] = supplierList
+        supplierList = get_suppliersInfos(doc, [comSelfName, buyer])
+        if len(supplierList) > 0:
+            dataList[6] = supplierList
+
+        # table缺失信息
+        if findBidMoneyFlag:
+            bmResult = re.search(pattern, doc.text())
+            if bmResult != None:
+                dataList[7] = bmResult.group()
+        # if recordFullDocFlag:
+        #     dataList.append(doc(ids.bidDetailID).text())
+        
         infosList.append(dataList)
+        chrome.closeLastTab(chromeBrowser)
 
     return infosList
 
-def get_suppliersInfos(doc, selfName):
+# 详情 - 所有供应商
+def get_suppliersInfos(doc, excludeList):
     comsID = ids.relatedComID
-    coms = doc(comsID + ' > a').items()
-    comsCnt = len(list(coms)) # 获取 generator 长度
-    
-    for item in coms:
-        curComName = pq(item).text()
-    # 1 是否超过 3 家供应商
-    # 2 超过 3 家则找 .js-full-container.hidden
-    # 3 没有则找 .js-full-container 
-    return []
+    otherSuppList = []
 
+    spanATagList = doc(comsID + ' > a').items()
+    for a in spanATagList:
+        curComName = a.text()
+        if filt_companyName(curComName, excludeList):
+            otherSuppList.append(curComName)
+
+    return otherSuppList
+
+# 在关联公司中筛选不要的公司名
+def filt_companyName(curComName, excludeList):
+    if excludeList.count(curComName) > 0:
+        return False
+    if curComName.find('招标') > -1 or curComName.find('咨询') > -1:
+        return False
+    
+    return True
 
 # 软件著作权表头
 # 软件著作权列表
@@ -279,29 +313,30 @@ def get_suppliersInfos(doc, selfName):
 if __name__ == '__main__':
     lenovoPath = 'D:\VSCode_Projects\py_tyc'
     xpsPath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg'
-    if 1 == 1:
+    if 1 == 2:
         fileHeader = lenovoPath
     else:
         fileHeader = xpsPath
     
     filePath = fileHeader + '\website_info\html\\tyc\阿里巴巴（中国）网络技术有限公司_电话_工商信息_风险信息_阿里巴巴 - 天眼查.html'
-
-    with open(filePath, "r", encoding='utf8') as f:
-        str = f.read()
-        selfName = get_selfName(pq(str))
-        print('selfName', selfName)
+    # with open(filePath, "r", encoding='utf8') as f:
+    #     str = f.read()
+    #     selfName = get_selfName(pq(str))
+    #     print('selfName', selfName)
     
-    filePath = fileHeader + '\website_info\html\\bids\东莞市智慧招商综合地理信息系统升级改造项目中标（成交）结果公告_招投标信息查询 - 天眼查.html'
+    # filePath = fileHeader + '\website_info\html\\bids\广东省住房和城乡建设厅省住房城乡建设厅注册类相关系统整合及数据治理（一期）项目（运营部分）成交结果公告_招投标信息查询 - 天眼查.html'
+    # filePath = fileHeader + '\website_info\html\\bids\东莞市智慧招商综合地理信息系统升级改造项目中标（成交）结果公告_招投标信息查询 - 天眼查.html'
     with open(filePath, "r", encoding='utf8') as f:
         str = f.read()
+
     doc = pq(str)
     # 测试招投标详情页面
-    get_suppliersInfos(doc)
+    # l = get_suppliersInfos(doc, ['奥格科技股份有限公司'])
+    # print(l)
 
-    # print(get_bidHeader(doc))
-    # print('infos: ', get_bidInfos(doc))
-    # l = get_bidInfos(doc)
+    print(get_bidHeader(doc))
+    # print('infos: ', get_bidInfos(doc, chromeBrowser))
+    # l = get_bidInfos(doc, chromeBrowser)
     # for e in l:
     #     print(e)
-
-    
+    # chromeBrowser.close()
