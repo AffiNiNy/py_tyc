@@ -24,6 +24,7 @@ pattern = '(\d{1,3},)+\d{2,3}\.\d{2,3}'
 def get_selfName(doc):
     return doc('#company_web_top .box.-company-box > .content .header .name').text()
 
+# 通用表头
 def get_commonHeader(doc, containerID):
     header = []
     holderHeader = doc(containerID + ' .table thead tr > th')
@@ -31,6 +32,7 @@ def get_commonHeader(doc, containerID):
         header.append(holderHeader[i].text)
     return header
 
+# 短表头
 def get_shortHeader(doc, containerID):
     header = []
     holderHeader = doc(containerID + ' .table > thead > tr').children()

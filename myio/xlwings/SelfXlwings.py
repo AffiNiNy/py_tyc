@@ -2,7 +2,7 @@ import xlwings as xw
 from xlwings.main import App
 
 class SelfXlwings:
-    'xlwings 方法'
+    """xlwings 方法"""
 
     def __init__(self):
         self.app = SelfXlwings.initApp()
@@ -22,5 +22,45 @@ class SelfXlwings:
     def open_xlsx(self, xlsxPath):
         return self.app.books.open(xlsxPath)
     
-    def quit(self):
-        self.app.quit()
+    def formatTitle(self, range, titleName):
+        """
+        设置 sheet 表头(第一行)
+
+        Parameters
+        ----------
+        name : excelSheet
+            Sheet wanted to be processed.
+        titleName : String
+            Table title.
+        ----------
+        """
+        range.merge()
+        range.value = titleName
+        range.font.size = 14
+        range.font.bold = True
+        range.row_height = 18.75
+        range.api.HorizontalAlignment = -4108
+        range.api.VerticalAlignment = -4108
+    
+    def formatHeader(self, range):
+        range.font.size = 12
+        range.font.bold = True
+        range.api.HorizontalAlignment = -4108
+        range.api.VerticalAlignment = -4108
+
+    def formatInAllCenter(self, range):
+        """
+        水平居中; 垂直居中;
+        """
+        range.api.HorizontalAlignment = -4108
+        range.api.VerticalAlignment = -4108
+
+    def formatLeftCenter(self, range):
+        """
+        水平靠左; 垂直居中;
+        """
+        range.api.HorizontalAlignment = -4131
+        range.api.VerticalAlignment = -4108
+    
+    def kill(self):
+        self.app.kill()
