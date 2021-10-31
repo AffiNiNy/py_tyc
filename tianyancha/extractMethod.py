@@ -315,7 +315,7 @@ def filt_companyName(curComName, excludeList):
 if __name__ == '__main__':
     lenovoPath = 'D:\VSCode_Projects\py_tyc'
     xpsPath = 'D:\DEVELOP\VSCode_Projects\ALittlePythonProg'
-    if 1 == 2:
+    if 1 == 1:
         fileHeader = lenovoPath
     else:
         fileHeader = xpsPath
@@ -336,7 +336,7 @@ if __name__ == '__main__':
     # l = get_suppliersInfos(doc, ['奥格科技股份有限公司'])
     # print(l)
 
-    print(get_bidHeader(doc))
+    print(get_holderInfos(doc))
     # print('infos: ', get_bidInfos(doc, chromeBrowser))
     # l = get_bidInfos(doc, chromeBrowser)
     # for e in l:
